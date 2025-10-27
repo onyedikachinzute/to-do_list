@@ -1,0 +1,252 @@
+:root {
+  --bg-dark: #0f172a;
+  --card-dark: #111827;
+  --text-dark: #e2e8f0;
+  --input-dark: #1e293b;
+
+  --bg-light: #f9fafb;
+  --card-light: #ffffff;
+  --text-light: #0f172a;
+  --input-light: #e2e8f0;
+
+  --accent: #38bdf8;
+}
+
+/* RESET + LAYOUT */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Inter", sans-serif;
+  background: var(--bg-dark);
+  color: var(--text-dark);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: background 0.6s ease, color 0.6s ease;
+}
+
+.page-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* CONTAINER */
+.container {
+  width: 90%;
+  max-width: 500px;
+  background: var(--card-dark);
+  padding: 20px 25px;
+  border-radius: 10px;
+  box-shadow: 0 0 25px rgba(56,189,248,0.25);
+  margin: 40px auto;
+  transition: background 0.6s ease, box-shadow 0.6s ease;
+}
+
+/* HEADER + TOGGLE */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+h1 {
+  color: var(--accent);
+  transition: color 0.6s ease;
+}
+
+.theme-toggle {
+  font-size: 1.6rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--accent);
+  transition: transform 0.3s ease, color 0.3s ease;
+}
+.theme-toggle:hover { transform: rotate(25deg) scale(1.1); }
+
+/* ADD TASK FORM */
+.add-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.add-form input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: var(--input-dark);
+  color: white;
+  transition: background 0.6s ease, color 0.6s ease, border 0.6s ease;
+}
+
+.add-form button {
+  background: var(--accent);
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: #0f172a;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+.add-form button:hover { background: #0ea5e9; }
+
+/* TASKS */
+.tasks {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.tasks li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--input-dark);
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: background 0.6s ease;
+}
+/* --- Completed task style --- */
+/* --- Completed task style (visible + animated) --- */
+.tasks li.done {
+  background: #064e3b;
+  border: 1px solid #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  transition: all 0.3s ease;
+}
+
+.tasks li.done span {
+  text-decoration: line-through;
+  color: #a7f3d0;
+}
+
+.tasks li.done .toggle-btn {
+  color: #10b981;
+  transform: scale(1.1);
+}
+
+/* Pulse effect when toggled */
+.pulse {
+  animation: pulse 0.4s ease;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+
+.tasks li.done span {
+  text-decoration: line-through;
+  color: #a7f3d0; /* light mint text */
+}
+
+.tasks li.done .toggle-btn {
+  color: #10b981;
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+.toggle-btn, .delete-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+}
+
+.toggle-btn {
+  transition: transform 0.2s ease;
+}
+.toggle-btn:active {
+  transform: scale(0.85);
+}
+
+.delete-btn:hover { color: #f87171; }
+
+/* FOOTER */
+.site-footer {
+  text-align: center;
+  padding: 20px 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  color: #94a3b8;
+  background: transparent;
+  transition: color 0.6s ease, border 0.6s ease;
+}
+
+/* --- TASK ANIMATIONS --- */
+.task-enter {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeIn 0.4s ease forwards;
+}
+
+.task-exit {
+  animation: fadeOut 0.35s ease forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* --- COMPLETE TASK PULSE --- */
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* --- THEME TOGGLE BOUNCE --- */
+body.theme-switching {
+  animation: themeBounce 0.5s ease;
+}
+@keyframes themeBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* LIGHT THEME */
+body.light {
+  background: var(--bg-light);
+  color: var(--text-light);
+}
+body.light .container {
+  background: var(--card-light);
+  box-shadow: 0 0 25px rgba(56,189,248,0.1);
+}
+body.light h1 {
+  color: #0284c7;
+}
+body.light .add-form input {
+  background: var(--input-light);
+  color: var(--text-light);
+  border: 1px solid #cbd5e1;
+}
+body.light .tasks li {
+  background: var(--input-light);
+}
+body.light .tasks li.done span {
+  color: #94a3b8;
+}
+body.light .site-footer {
+  border-top: 1px solid rgba(0,0,0,0.05);
+  color: #475569;
+}

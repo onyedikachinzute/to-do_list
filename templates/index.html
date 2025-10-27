@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kachi’s To-Do List</title>
+
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='todo_icon.png') }}">
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+  <div class="page-wrapper">
+    <div class="container">
+      <div class="header">
+        <h1>📝 Kachi’s To-Do List</h1>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+      </div>
+
+      <form action="/add" method="POST" class="add-form">
+        <input type="text" name="task" placeholder="Enter a new task..." required />
+        <button type="submit">Add</button>
+      </form>
+
+      <ul class="tasks">
+        {% for task in tasks %}
+        <li class="{{ 'done' if task.done else '' }}">
+          <form action="/toggle/{{ task.id }}" method="POST" style="display:inline;">
+            <button class="toggle-btn">{{ '✅' if task.done else '⬜' }}</button>
+          </form>
+          <span>{{ task.text }}</span>
+          <form action="/delete/{{ task.id }}" method="POST" style="display:inline;">
+            <button class="delete-btn">🗑</button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <footer class="site-footer">
+      <p>© <span id="yr"></span> Kachi. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
