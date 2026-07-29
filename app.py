@@ -6,6 +6,19 @@ import sys
 import threading
 import webbrowser
 
+# Windows consoles often default to a non-UTF-8 codepage (e.g. cp1252),
+# which can make print() crash the whole process the moment it hits a
+# character like an em dash or emoji - with no visible error, since the
+# crash happens while Python is trying to report the crash. Forcing
+# UTF-8 here means that can never happen, regardless of what any print()
+# statement contains later.
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
 # Always resolve paths relative to this file, so double-clicking from
 # anywhere (Explorer, Startup folder, a shortcut) still finds the data files.
 if getattr(sys, "frozen", False):
@@ -32,6 +45,10 @@ HOST = "127.0.0.1"
 
 VALID_CATEGORIES = {"Assignment", "Test", "Project", "Personal", "Other"}
 VALID_PRIORITIES = {"low", "medium", "high"}
+
+import updater
+
+updater_checker = updater.UpdateChecker(BASE_DIR)
 
 
 def load_tasks():
@@ -178,18 +195,99 @@ def _open_browser_soon():
     threading.Timer(1.0, lambda: webbrowser.open(f"http://{HOST}:{PORT}/")).start()
 
 
+@app.route("/api/version")
+def api_version():
+    return jsonify({"version": updater.APP_VERSION, "frozen": updater.IS_FROZEN})
+
+
+@app.route("/api/config", methods=["GET", "POST"])
+def api_config():
+    if request.method == "GET":
+        return jsonify(updater.load_config(BASE_DIR))
+
+    data = request.get_json(silent=True) or {}
+    cfg = updater.load_config(BASE_DIR)
+    if "github_repo" in data:
+        cfg["github_repo"] = (data["github_repo"] or "").strip()
+    if "check_interval_hours" in data:
+        try:
+            cfg["check_interval_hours"] = max(0.25, float(data["check_interval_hours"]))
+        except (TypeError, ValueError):
+            pass
+    updater.save_config(BASE_DIR, cfg)
+    return jsonify(cfg)
+
+
+@app.route("/api/update/status")
+def api_update_status():
+    return jsonify(updater_checker.get_state())
+
+
+@app.route("/api/update/check", methods=["POST"])
+def api_update_check():
+    return jsonify(updater_checker.check_now())
+
+
+@app.route("/api/update/skip", methods=["POST"])
+def api_update_skip():
+    state = updater_checker.get_state()
+    cfg = updater.load_config(BASE_DIR)
+    cfg["skip_version"] = state.get("latest_version")
+    updater.save_config(BASE_DIR, cfg)
+    updater_checker.state["update_available"] = False
+    return jsonify({"ok": True})
+
+
+@app.route("/api/update/apply", methods=["POST"])
+def api_update_apply():
+    state = updater_checker.get_state()
+
+    if updater.IS_FROZEN:
+        asset_url = state.get("asset_url")
+        if not asset_url:
+            return jsonify({"ok": False, "error": "No downloadable update found in the latest release."}), 400
+
+        errors = []
+        ok = updater.apply_update_frozen(asset_url, BASE_DIR, os.getpid(), on_error=errors.append)
+        if not ok:
+            return jsonify({"ok": False, "error": errors[0] if errors else "Download failed."}), 500
+
+        threading.Timer(1.5, lambda: os._exit(0)).start()
+        return jsonify({"ok": True, "message": "Updating and restarting..."})
+
+    ok, message = updater.apply_update_script(BASE_DIR)
+    status = 200 if ok else 400
+    return jsonify({"ok": ok, "message": message}), status
+
+
+@app.route("/api/startup/status")
+def api_startup_status():
+    return jsonify(updater.startup_status(BASE_DIR))
+
+
+@app.route("/api/startup/enable", methods=["POST"])
+def api_startup_enable():
+    return jsonify(updater.startup_enable(BASE_DIR))
+
+
+@app.route("/api/startup/disable", methods=["POST"])
+def api_startup_disable():
+    return jsonify(updater.startup_disable(BASE_DIR))
+
+
 if __name__ == "__main__":
     no_browser = "--no-browser" in sys.argv
 
     if _server_already_running():
         # Someone double-launched us. The real server is already up and
         # healthy — don't touch its PID file, just take them to it.
-        print("Kachi's Desk is already running — opening your browser instead.")
+        print("Kachi's Desk is already running - opening your browser instead.")
         if not no_browser:
             webbrowser.open(f"http://{HOST}:{PORT}/")
         sys.exit(0)
 
     _write_pid_file()
+    updater_checker.start_background_loop()
     try:
         if not no_browser:
             _open_browser_soon()

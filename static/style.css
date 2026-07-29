@@ -159,6 +159,94 @@ h1 {
 body.light .theme-toggle .icon-moon { display: none; }
 body.light .theme-toggle .icon-sun { display: block; }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ---- Update banner ---- */
+.update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(201,161,90,0.16), rgba(201,161,90,0.06));
+  border: 1px solid var(--brass);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 18px;
+  font-size: 0.85rem;
+  animation: fadeIn 0.4s ease;
+}
+.update-banner-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--brass-strong);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.btn-link:hover { text-decoration: underline; }
+
+/* ---- Settings rows / toggle switch ---- */
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.settings-label { font-weight: 600; font-size: 0.92rem; }
+.settings-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+.settings-divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+.switch {
+  width: 44px;
+  height: 25px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  position: relative;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+.switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.25s cubic-bezier(.4,0,.2,1), background 0.25s ease;
+}
+.switch.is-on { background: var(--brass); border-color: var(--brass); }
+.switch.is-on .switch-thumb { transform: translateX(19px); background: #1a1408; }
+.switch:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.update-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+.update-box-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+.update-box-notes {
+  font-size: 0.8rem;
+  color: var(--muted);
+  max-height: 100px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  margin-bottom: 10px;
+}
+
 /* ---- Progress row ---- */
 .progress-row {
   margin-top: 28px;

@@ -19,7 +19,7 @@ from werkzeug.serving import make_server
 BASE_DIR = os.path.dirname(os.path.abspath(sys.executable if getattr(sys, "frozen", False) else __file__))
 os.chdir(BASE_DIR)
 
-from app import app, HOST, PORT, _write_pid_file, _remove_pid_file  # noqa: E402
+from app import app, HOST, PORT, _write_pid_file, _remove_pid_file, _server_already_running, updater_checker  # noqa: E402
 
 ICON_PATH = os.path.join(BASE_DIR, "static", "todo_icon.png")
 
@@ -37,7 +37,14 @@ class ServerThread(threading.Thread):
 
 
 def main():
+    if _server_already_running():
+        # Already running (e.g. exe double-clicked twice) — just surface
+        # the existing instance instead of starting a second server.
+        webbrowser.open(f"http://{HOST}:{PORT}/")
+        return
+
     _write_pid_file()
+    updater_checker.start_background_loop()
     server_thread = ServerThread()
     server_thread.start()
     webbrowser.open(f"http://{HOST}:{PORT}/")

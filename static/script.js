@@ -172,28 +172,32 @@ document.addEventListener("DOMContentLoaded", () => {
     render();
   });
 
-  // ---------- Add drawer ----------
+  // ---------- Drawers (Add task / Settings) share one backdrop ----------
   const fab = document.getElementById("addFab");
-  const drawer = document.getElementById("addDrawer");
+  const addDrawer = document.getElementById("addDrawer");
+  const settingsDrawer = document.getElementById("settingsDrawer");
   const backdrop = document.getElementById("drawerBackdrop");
   const addForm = document.getElementById("addForm");
+  let openDrawerEl = null;
 
-  function openDrawer() {
-    drawer.hidden = false;
+  function openDrawer(drawerEl, focusEl) {
+    if (openDrawerEl) openDrawerEl.hidden = true;
+    drawerEl.hidden = false;
     backdrop.hidden = false;
-    document.getElementById("taskText").focus();
+    openDrawerEl = drawerEl;
+    if (focusEl) focusEl.focus();
   }
   function closeDrawer() {
-    drawer.hidden = true;
+    if (openDrawerEl) openDrawerEl.hidden = true;
     backdrop.hidden = true;
-    addForm.reset();
+    openDrawerEl = null;
   }
 
-  fab.addEventListener("click", openDrawer);
+  fab.addEventListener("click", () => openDrawer(addDrawer, document.getElementById("taskText")));
   backdrop.addEventListener("click", closeDrawer);
-  document.getElementById("cancelAdd").addEventListener("click", closeDrawer);
+  document.getElementById("cancelAdd").addEventListener("click", () => { addForm.reset(); closeDrawer(); });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !drawer.hidden) closeDrawer();
+    if (e.key === "Escape" && openDrawerEl) closeDrawer();
   });
 
   addForm.addEventListener("submit", async (e) => {
@@ -215,6 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) throw new Error("Add failed");
       const newTask = await res.json();
       tasks.push(newTask);
+      addForm.reset();
       closeDrawer();
       render();
     } catch (err) {
@@ -222,6 +227,7 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Couldn't add that task. Try again?");
     }
   });
+
 
   // ---------- Toggle / delete / edit ----------
   async function toggleTask(id, node) {
@@ -308,6 +314,184 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+
+  // ---------- Settings drawer: startup toggle + updates ----------
+  const settingsToggleBtn = document.getElementById("settings-toggle");
+  const closeSettingsBtn = document.getElementById("closeSettings");
+  const startupSwitch = document.getElementById("startupSwitch");
+  const startupSub = document.getElementById("startupSub");
+  const versionLabel = document.getElementById("versionLabel");
+  const updateStatusText = document.getElementById("updateStatusText");
+  const checkUpdateBtn = document.getElementById("checkUpdateBtn");
+  const updateAvailableBox = document.getElementById("updateAvailableBox");
+  const updateBoxVersion = document.getElementById("updateBoxVersion");
+  const updateBoxNotes = document.getElementById("updateBoxNotes");
+  const applyUpdateBtn = document.getElementById("applyUpdateBtn");
+  const skipUpdateBtn = document.getElementById("skipUpdateBtn");
+  const githubRepoInput = document.getElementById("githubRepoInput");
+  const saveConfigBtn = document.getElementById("saveConfigBtn");
+  const updateBanner = document.getElementById("updateBanner");
+  const updateBannerVersion = document.getElementById("updateBannerVersion");
+
+  let localVersion = "—";
+
+  settingsToggleBtn.addEventListener("click", async () => {
+    openDrawer(settingsDrawer);
+    refreshStartupStatus();
+    refreshVersionAndConfig();
+  });
+  closeSettingsBtn.addEventListener("click", closeDrawer);
+
+  async function refreshStartupStatus() {
+    try {
+      const res = await fetch("/api/startup/status");
+      const data = await res.json();
+      applyStartupState(data);
+    } catch (err) {
+      startupSub.textContent = "Couldn't check startup status.";
+    }
+  }
+
+  function applyStartupState(data) {
+    if (!data.supported) {
+      startupSub.textContent = "Not supported on this system.";
+      startupSwitch.disabled = true;
+      return;
+    }
+    startupSwitch.setAttribute("aria-checked", String(!!data.enabled));
+    startupSwitch.classList.toggle("is-on", !!data.enabled);
+    startupSub.textContent = data.enabled
+      ? "Kachi's Desk opens automatically when you log in."
+      : "Off — you'll need to open it yourself.";
+  }
+
+  startupSwitch.addEventListener("click", async () => {
+    const currentlyOn = startupSwitch.classList.contains("is-on");
+    startupSub.textContent = "Updating…";
+    try {
+      const res = await fetch(currentlyOn ? "/api/startup/disable" : "/api/startup/enable", { method: "POST" });
+      const data = await res.json();
+      applyStartupState(data);
+    } catch (err) {
+      startupSub.textContent = "Something went wrong. Try again?";
+    }
+  });
+
+  async function refreshVersionAndConfig() {
+    try {
+      const [vRes, cRes] = await Promise.all([fetch("/api/version"), fetch("/api/config")]);
+      const vData = await vRes.json();
+      const cData = await cRes.json();
+      localVersion = vData.version;
+      versionLabel.textContent = `v${localVersion}`;
+      githubRepoInput.value = cData.github_repo || "";
+    } catch (err) {
+      versionLabel.textContent = "v?";
+    }
+    refreshUpdateStatus();
+  }
+
+  function renderUpdateState(state) {
+    if (state.error) {
+      updateStatusText.textContent = state.error;
+      updateAvailableBox.hidden = true;
+      updateBanner.hidden = true;
+      return;
+    }
+    if (state.update_available) {
+      updateStatusText.textContent = "An update is ready to install.";
+      updateAvailableBox.hidden = false;
+      updateBoxVersion.textContent = state.latest_version || "";
+      updateBoxNotes.textContent = state.notes || "";
+      updateBannerVersion.textContent = state.latest_version ? ` (${state.latest_version})` : "";
+      updateBanner.hidden = false;
+    } else {
+      updateStatusText.textContent = state.checked_at ? "You're on the latest version." : "Checking for updates…";
+      updateAvailableBox.hidden = true;
+      updateBanner.hidden = true;
+    }
+  }
+
+  async function refreshUpdateStatus() {
+    try {
+      const res = await fetch("/api/update/status");
+      renderUpdateState(await res.json());
+    } catch (err) {
+      updateStatusText.textContent = "Couldn't check update status.";
+    }
+  }
+
+  checkUpdateBtn.addEventListener("click", async () => {
+    updateStatusText.textContent = "Checking…";
+    try {
+      const res = await fetch("/api/update/check", { method: "POST" });
+      renderUpdateState(await res.json());
+    } catch (err) {
+      updateStatusText.textContent = "Couldn't reach GitHub.";
+    }
+  });
+
+  applyUpdateBtn.addEventListener("click", async () => {
+    applyUpdateBtn.disabled = true;
+    applyUpdateBtn.textContent = "Updating…";
+    try {
+      const res = await fetch("/api/update/apply", { method: "POST" });
+      const data = await res.json();
+      if (data.ok) {
+        updateStatusText.textContent = "Restarting with the new version — this page will reconnect shortly.";
+        // The server process is about to exit and relaunch; poll until it's back.
+        setTimeout(() => {
+          const retry = setInterval(() => {
+            fetch("/api/version").then(() => { clearInterval(retry); location.reload(); }).catch(() => {});
+          }, 1500);
+        }, 2000);
+      } else {
+        updateStatusText.textContent = data.error || "Update failed.";
+        applyUpdateBtn.disabled = false;
+        applyUpdateBtn.textContent = "Update now";
+      }
+    } catch (err) {
+      updateStatusText.textContent = "Update failed. Try again?";
+      applyUpdateBtn.disabled = false;
+      applyUpdateBtn.textContent = "Update now";
+    }
+  });
+
+  skipUpdateBtn.addEventListener("click", async () => {
+    await fetch("/api/update/skip", { method: "POST" });
+    updateAvailableBox.hidden = true;
+    updateBanner.hidden = true;
+    updateStatusText.textContent = "Skipped — you won't be notified about this version again.";
+  });
+
+  saveConfigBtn.addEventListener("click", async () => {
+    saveConfigBtn.disabled = true;
+    saveConfigBtn.textContent = "Saving…";
+    try {
+      await fetch("/api/config", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ github_repo: githubRepoInput.value.trim() }),
+      });
+      refreshUpdateStatus();
+    } finally {
+      saveConfigBtn.disabled = false;
+      saveConfigBtn.textContent = "Save";
+    }
+  });
+
+  document.getElementById("updateBannerDismiss").addEventListener("click", () => {
+    updateBanner.hidden = true;
+  });
+  document.getElementById("updateBannerView").addEventListener("click", () => {
+    openDrawer(settingsDrawer);
+    refreshStartupStatus();
+    refreshVersionAndConfig();
+  });
+
+  // Poll periodically so the banner can appear even without opening Settings.
+  refreshUpdateStatus();
+  setInterval(refreshUpdateStatus, 5 * 60 * 1000);
 
   render();
 });

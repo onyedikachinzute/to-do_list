@@ -17,6 +17,11 @@ pyinstaller --noconfirm --onefile --windowed --name "KachisDesk" ^
 echo.
 echo Copying data files next to the exe...
 copy /y tasks.json dist\tasks.json >NUL
+if exist config.json (
+    copy /y config.json dist\config.json >NUL
+) else (
+    echo {"github_repo": "", "check_interval_hours": 6, "skip_version": null} > dist\config.json
+)
 
 echo.
 echo Done. Your app is at: dist\KachisDesk.exe

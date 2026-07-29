@@ -51,6 +51,27 @@ After Option A or B, double-click `add_to_startup.bat`. It adds a shortcut to yo
 
 Run `remove_from_startup.bat` any time to undo this.
 
+## Settings, startup, and auto-updates (all from within the app)
+
+Click the ⚙ gear icon in the header — no `.bat` files or terminal needed, this works whether you're running the `.py`, `start.bat`, or the built `.exe`.
+
+**Launch on Windows startup** — a toggle switch. Flips a registry entry (`HKCU\...\Run`) directly, no shortcut files involved. Works identically whether you're running the script or the `.exe`.
+
+**Auto-updates** — set your GitHub repo (`username/repo`) in Settings once. From then on:
+- On every launch, and every few hours after that, the app checks your repo's [latest release](https://docs.github.com/en/repositories/releasing-projects-on-github) for a newer version tag.
+- If one exists, a banner appears at the top of the page and details show up in Settings (including release notes).
+- Click **Update now** and it downloads the new build and restarts itself automatically — no manual download/reinstall.
+- Click **Skip this version** to silence just that one release without turning off checking entirely.
+
+**To publish an update yourself:**
+1. Bump `APP_VERSION` in `updater.py`.
+2. Rebuild with `build_exe.bat`.
+3. On GitHub: Releases → Draft a new release → tag it (e.g. `v1.2.0`) → attach `dist\KachisDesk.exe` as a release asset → publish.
+
+Anyone running an older build will be notified automatically next time they open the app (or within `check_interval_hours`).
+
+*Note:* self-update only works for the built `.exe`. If you're running `app.py` directly from a `git clone`, the same "Update now" button instead runs `git pull` and restarts — it just needs the folder to actually be a git checkout.
+
 ## Keeping your task data private
 
 `tasks.json` is in `.gitignore`, so your real tasks never get committed. A blank list is created automatically the first time the app runs if the file doesn't exist — anyone who clones the repo starts with an empty desk, or you can hand them `tasks.example.json` (rename it to `tasks.json`) for a couple of sample tasks to look at.

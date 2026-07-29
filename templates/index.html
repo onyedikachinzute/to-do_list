@@ -28,10 +28,13 @@
           <p class="tagline">a small light for the late nights</p>
         </div>
       </div>
-      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light and dark theme" title="Toggle theme">
-        <span class="icon-moon">🌙</span>
-        <span class="icon-sun">☀️</span>
-      </button>
+      <div class="header-actions">
+        <button id="settings-toggle" class="theme-toggle" aria-label="Open settings" title="Settings" aria-haspopup="dialog" aria-controls="settingsDrawer">⚙</button>
+        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light and dark theme" title="Toggle theme">
+          <span class="icon-moon">🌙</span>
+          <span class="icon-sun">☀️</span>
+        </button>
+      </div>
     </div>
 
     <div class="progress-row">
@@ -48,6 +51,14 @@
       </div>
     </div>
   </header>
+
+  <div class="update-banner" id="updateBanner" hidden>
+    <span>✨ A new version is available<span id="updateBannerVersion"></span>.</span>
+    <div class="update-banner-actions">
+      <button id="updateBannerView" class="btn-link">View</button>
+      <button id="updateBannerDismiss" class="btn-link">Dismiss</button>
+    </div>
+  </div>
 
   <main class="desk">
 
@@ -113,6 +124,51 @@
         <button type="submit" class="btn-primary">Add to desk</button>
       </div>
     </form>
+  </section>
+
+  <section class="add-drawer" id="settingsDrawer" role="dialog" aria-modal="true" aria-labelledby="settingsDrawerTitle" hidden>
+    <h2 id="settingsDrawerTitle">Settings</h2>
+
+    <div class="settings-row">
+      <div>
+        <p class="settings-label">Launch on Windows startup</p>
+        <p class="settings-sub" id="startupSub">Checking…</p>
+      </div>
+      <button id="startupSwitch" class="switch" role="switch" aria-checked="false" aria-label="Launch on Windows startup">
+        <span class="switch-thumb"></span>
+      </button>
+    </div>
+
+    <hr class="settings-divider">
+
+    <div class="settings-row">
+      <div>
+        <p class="settings-label">Version <span id="versionLabel">—</span></p>
+        <p class="settings-sub" id="updateStatusText">Checking for updates…</p>
+      </div>
+      <button id="checkUpdateBtn" class="btn-ghost">Check now</button>
+    </div>
+
+    <div id="updateAvailableBox" class="update-box" hidden>
+      <p class="update-box-title">Update available: <span id="updateBoxVersion"></span></p>
+      <p class="update-box-notes" id="updateBoxNotes"></p>
+      <div class="drawer-actions">
+        <button type="button" class="btn-ghost" id="skipUpdateBtn">Skip this version</button>
+        <button type="button" class="btn-primary" id="applyUpdateBtn">Update now</button>
+      </div>
+    </div>
+
+    <hr class="settings-divider">
+
+    <label class="field">
+      <span>GitHub repo to check for updates <em>(username/repo)</em></span>
+      <input type="text" id="githubRepoInput" placeholder="e.g. kachi/kachis-desk-todo" autocomplete="off">
+    </label>
+
+    <div class="drawer-actions">
+      <button type="button" class="btn-ghost" id="closeSettings">Close</button>
+      <button type="button" class="btn-primary" id="saveConfigBtn">Save</button>
+    </div>
   </section>
 
   <footer class="site-footer">
