@@ -148,6 +148,15 @@ def toggle_task(task_id):
     return jsonify(task)
 
 
+import socket
+
+
+def _server_already_running():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.3)
+        return s.connect_ex((HOST, PORT)) == 0
+
+
 def _write_pid_file():
     try:
         with open(PID_FILE, "w") as f:
@@ -170,8 +179,17 @@ def _open_browser_soon():
 
 
 if __name__ == "__main__":
-    _write_pid_file()
     no_browser = "--no-browser" in sys.argv
+
+    if _server_already_running():
+        # Someone double-launched us. The real server is already up and
+        # healthy — don't touch its PID file, just take them to it.
+        print("Kachi's Desk is already running — opening your browser instead.")
+        if not no_browser:
+            webbrowser.open(f"http://{HOST}:{PORT}/")
+        sys.exit(0)
+
+    _write_pid_file()
     try:
         if not no_browser:
             _open_browser_soon()
