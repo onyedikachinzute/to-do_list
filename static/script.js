@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
     tasks = [];
   }
 
-  let currentFilter = "all";
+  let currentFilter = "active";
   let currentSearch = "";
 
   const taskList = document.getElementById("taskList");
@@ -113,7 +113,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (tasks.length === 0) {
       emptyState.textContent = "Your desk is clear. Add a task to get the lamp glowing.";
     } else if (visible.length === 0) {
-      emptyState.textContent = "Nothing matches — try a different search or filter.";
+      if (currentSearch) {
+        emptyState.textContent = "Nothing matches your search.";
+      } else if (currentFilter === "active") {
+        emptyState.textContent = "All caught up. Nothing active right now.";
+      } else if (currentFilter === "overdue") {
+        emptyState.textContent = "Nothing overdue. You're on top of things.";
+      } else if (currentFilter === "done") {
+        emptyState.textContent = "Nothing completed yet — get to it.";
+      } else {
+        emptyState.textContent = "Nothing here.";
+      }
     }
 
     updateProgress();
@@ -221,9 +231,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const updated = await res.json();
       const idx = tasks.findIndex((t) => t.id === id);
       if (idx > -1) tasks[idx] = updated;
-      node.classList.add("task-pulse");
-      setTimeout(() => node.classList.remove("task-pulse"), 400);
-      render();
+
+      const stillVisible = matchesFilter(updated);
+
+      if (!stillVisible) {
+        // Slide right when moving toward "done", left when moving back to "active".
+        const exitClass = updated.done ? "task-complete-exit" : "task-return-exit";
+        node.classList.add(exitClass);
+        node.addEventListener("animationend", () => render(), { once: true });
+      } else {
+        node.classList.add("task-pulse");
+        setTimeout(() => node.classList.remove("task-pulse"), 400);
+        render();
+      }
     } catch (err) {
       console.error(err);
     }

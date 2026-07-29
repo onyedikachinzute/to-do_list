@@ -420,9 +420,26 @@ body.light .theme-toggle .icon-sun { display: block; }
 .task-exit { animation: fadeOut 0.3s ease forwards; }
 .task-pulse { animation: pulse 0.4s ease; }
 
+/* Sliding a task out of view when it's ticked off (moves toward "done")
+   or brought back (moves back toward "active"). */
+.task-complete-exit { animation: completeOut 0.45s cubic-bezier(.4,0,.2,1) forwards; }
+.task-return-exit { animation: returnOut 0.45s cubic-bezier(.4,0,.2,1) forwards; }
+
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes fadeOut { to { opacity: 0; transform: translateY(-8px) scale(0.98); } }
 @keyframes pulse { 50% { transform: scale(1.015); } }
+
+@keyframes completeOut {
+  0% { opacity: 1; transform: translateX(0) scale(1); }
+  40% { opacity: 0.7; transform: translateX(18px) scale(0.99); }
+  100% { opacity: 0; transform: translateX(48px) scale(0.94); }
+}
+
+@keyframes returnOut {
+  0% { opacity: 1; transform: translateX(0) scale(1); }
+  40% { opacity: 0.7; transform: translateX(-18px) scale(0.99); }
+  100% { opacity: 0; transform: translateX(-48px) scale(0.94); }
+}
 
 /* ============ EMPTY STATE ============ */
 .empty-state {
