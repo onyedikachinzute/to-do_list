@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+kachisdesk.pid
+
+# Personal task data — don't share your actual to-do list.
+# A fresh tasks.json is auto-created on first run if this file is missing.
+tasks.json

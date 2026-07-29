@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "text": "Welcome to Kachi's Desk — click the checkbox to complete a task",
+        "done": false,
+        "category": "Other",
+        "priority": "medium",
+        "due_date": null,
+        "created_at": "2026-01-01T09:00:00"
+    },
+    {
+        "id": 2,
+        "text": "Try adding your own task with the + button",
+        "done": false,
+        "category": "Personal",
+        "priority": "low",
+        "due_date": null,
+        "created_at": "2026-01-01T09:00:00"
+    }
+]

@@ -1,0 +1,7 @@
+Flask>=3.0.0
+
+# Only needed if you build the standalone .exe (see build_exe.bat) —
+# not required to just run start.bat / stop.bat.
+pystray>=0.19.0
+pillow>=10.0.0
+pyinstaller>=6.0.0

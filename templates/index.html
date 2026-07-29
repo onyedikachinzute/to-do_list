@@ -1,52 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kachi’s To-Do List</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kachi's Desk — To-Do List</title>
 
-  
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='todo_icon.png') }}">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='todo_icon.png') }}">
 
-  <!-- CSS -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
-  <div class="page-wrapper">
-    <div class="container">
-      <div class="header">
-        <h1>📝 Kachi’s To-Do List</h1>
-        <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme">🌙</button>
+
+<div class="lamp-glow" id="lampGlow" aria-hidden="true"></div>
+
+<div class="page">
+
+  <header class="desk-header">
+    <div class="header-top">
+      <div class="brand">
+        <span class="brand-mark">✎</span>
+        <div>
+          <h1>Kachi's Desk</h1>
+          <p class="tagline">a small light for the late nights</p>
+        </div>
       </div>
-
-      <form action="/add" method="POST" class="add-form">
-        <input type="text" name="task" placeholder="Enter a new task..." required />
-        <button type="submit">Add</button>
-      </form>
-
-      <ul class="tasks">
-        {% for task in tasks %}
-        <li class="{{ 'done' if task.done else '' }}">
-          <form action="/toggle/{{ task.id }}" method="POST" style="display:inline;">
-            <button class="toggle-btn">{{ '✅' if task.done else '⬜' }}</button>
-          </form>
-          <span>{{ task.text }}</span>
-          <form action="/delete/{{ task.id }}" method="POST" style="display:inline;">
-            <button class="delete-btn">🗑</button>
-          </form>
-        </li>
-        {% endfor %}
-      </ul>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light and dark theme" title="Toggle theme">
+        <span class="icon-moon">🌙</span>
+        <span class="icon-sun">☀️</span>
+      </button>
     </div>
 
-    <footer class="site-footer">
-      <p>© <span id="yr"></span> Kachi. All rights reserved.</p>
-    </footer>
-  </div>
+    <div class="progress-row">
+      <div class="progress-ring-wrap">
+        <svg viewBox="0 0 64 64" class="progress-ring" aria-hidden="true">
+          <circle class="ring-track" cx="32" cy="32" r="27"></circle>
+          <circle class="ring-fill" id="ringFill" cx="32" cy="32" r="27"></circle>
+        </svg>
+        <span class="progress-ring-label" id="ringLabel">0%</span>
+      </div>
+      <div class="progress-copy">
+        <p class="progress-headline" id="progressHeadline">Nothing lit yet.</p>
+        <p class="progress-sub" id="progressSub">Add a task to get started.</p>
+      </div>
+    </div>
+  </header>
 
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <main class="desk">
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input id="searchInput" type="search" placeholder="Search tasks…" aria-label="Search tasks">
+      </div>
+      <div class="filter-tabs" role="tablist" aria-label="Filter tasks">
+        <button class="filter-tab is-active" data-filter="all" role="tab" aria-selected="true">All</button>
+        <button class="filter-tab" data-filter="active" role="tab" aria-selected="false">Active</button>
+        <button class="filter-tab" data-filter="overdue" role="tab" aria-selected="false">Overdue</button>
+        <button class="filter-tab" data-filter="done" role="tab" aria-selected="false">Done</button>
+      </div>
+    </div>
+
+    <ul class="tasks" id="taskList" aria-live="polite"></ul>
+
+    <p class="empty-state" id="emptyState" hidden>Your desk is clear. Nothing to see here — for now.</p>
+
+  </main>
+
+  <button class="fab" id="addFab" aria-haspopup="dialog" aria-controls="addDrawer" aria-label="Add a new task">+</button>
+
+  <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+  <section class="add-drawer" id="addDrawer" role="dialog" aria-modal="true" aria-labelledby="addDrawerTitle" hidden>
+    <h2 id="addDrawerTitle">New task</h2>
+    <form id="addForm">
+      <label class="field">
+        <span>What do you need to do?</span>
+        <input type="text" id="taskText" name="text" placeholder="e.g. Finish Discrete Structures problem set" required autocomplete="off">
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Category</span>
+          <select id="taskCategory" name="category">
+            <option value="Assignment">Assignment</option>
+            <option value="Test">Test</option>
+            <option value="Project">Project</option>
+            <option value="Personal">Personal</option>
+            <option value="Other" selected>Other</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Priority</span>
+          <select id="taskPriority" name="priority">
+            <option value="low">Low</option>
+            <option value="medium" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Due date <em>(optional)</em></span>
+        <input type="date" id="taskDue" name="due_date">
+      </label>
+
+      <div class="drawer-actions">
+        <button type="button" class="btn-ghost" id="cancelAdd">Cancel</button>
+        <button type="submit" class="btn-primary">Add to desk</button>
+      </div>
+    </form>
+  </section>
+
+  <footer class="site-footer">
+    <p>© <span id="yr"></span> Kachi. Built one late night at a time.</p>
+  </footer>
+
+</div>
+
+<template id="taskTemplate">
+  <li class="task" data-id="">
+    <button class="toggle-btn" aria-label="Toggle complete"><span class="check"></span></button>
+    <div class="task-body">
+      <p class="task-text"></p>
+      <div class="task-meta">
+        <span class="chip chip-category"></span>
+        <span class="chip chip-priority"></span>
+        <span class="chip chip-due"></span>
+      </div>
+    </div>
+    <div class="task-actions">
+      <button class="icon-btn edit-btn" aria-label="Edit task" title="Edit">✎</button>
+      <button class="icon-btn delete-btn" aria-label="Delete task" title="Delete">🗑</button>
+    </div>
+  </li>
+</template>
+
+<script id="initial-tasks" type="application/json">{{ tasks_json | safe }}</script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
 </html>
