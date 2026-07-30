@@ -10,7 +10,9 @@ your system tray while running.
 import os
 import sys
 import threading
+import time
 import webbrowser
+from datetime import datetime
 
 import pystray
 from PIL import Image
@@ -22,12 +24,38 @@ os.chdir(BASE_DIR)
 from app import app, HOST, PORT, _write_pid_file, _remove_pid_file, _server_already_running, updater_checker  # noqa: E402
 
 ICON_PATH = os.path.join(BASE_DIR, "static", "todo_icon.png")
+ERROR_LOG_FILE = os.path.join(BASE_DIR, "kachisdesk_error.log")
+
+
+def _log_crash(exc):
+    import traceback
+    try:
+        with open(ERROR_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"\n--- {datetime.now().isoformat()} ---\n")
+            traceback.print_exception(type(exc), exc, exc.__traceback__, file=f)
+    except OSError:
+        pass
 
 
 class ServerThread(threading.Thread):
-    def __init__(self):
+    def __init__(self, max_attempts=6, retry_delay=1.5):
         super().__init__(daemon=True)
-        self.server = make_server(HOST, PORT, app)
+        # make_server() binds the socket immediately, synchronously. Right
+        # after a self-update swap, the old process's port may not be
+        # fully released yet - retry instead of dying silently (this is
+        # a --windowed build, so an unhandled exception here would
+        # otherwise vanish with zero visible trace).
+        last_error = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                self.server = make_server(HOST, PORT, app)
+                return
+            except OSError as e:
+                last_error = e
+                _log_crash(e)
+                if attempt < max_attempts:
+                    time.sleep(retry_delay)
+        raise last_error
 
     def run(self):
         self.server.serve_forever()
@@ -76,4 +104,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        _log_crash(e)
+        # Best-effort: still try to clean up the PID file so a future
+        # launch isn't confused by a stale one.
+        _remove_pid_file()
+        raise

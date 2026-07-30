@@ -22,7 +22,7 @@ import time
 import urllib.error
 import urllib.request
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 RUN_KEY_NAME = "KachisDesk"
 
 try:
@@ -211,16 +211,49 @@ def apply_update_frozen(asset_url, base_dir, pid, on_error=None):
         return False
 
     bat_path = os.path.join(tmp_dir, "kachisdesk_apply_update.bat")
+    exe_name = os.path.basename(current_exe)
+    log_path = os.path.join(tmp_dir, "kachisdesk_update_log.txt")
+
     bat_contents = f"""@echo off
+setlocal enabledelayedexpansion
+set "LOGFILE={log_path}"
+echo [%date% %time%] Update started > "%LOGFILE%"
+
+set "TRIES=0"
 :waitloop
-tasklist /FI "PID eq {pid}" 2>NUL | find "{pid}" >NUL
+set /a TRIES+=1
+rem Check both PID *and* image name - a plain PID check can be fooled if
+rem Windows reassigns this PID to a totally unrelated process after the
+rem real one exits, which would otherwise wait forever.
+tasklist /FI "PID eq {pid}" /FI "IMAGENAME eq {exe_name}" 2>NUL | find /I "{exe_name}" >NUL
 if not errorlevel 1 (
+    if !TRIES! GEQ 40 (
+        echo [%date% %time%] Gave up waiting after !TRIES! checks - proceeding anyway >> "%LOGFILE%"
+        goto proceed
+    )
     timeout /t 1 >NUL
     goto waitloop
 )
-copy /y "{new_exe_path}" "{current_exe}" >NUL
+echo [%date% %time%] Old process confirmed exited after !TRIES! checks >> "%LOGFILE%"
+
+:proceed
+rem Extra buffer: the OS can report the old process gone slightly before
+rem it has actually released the port it was bound to. Give it a moment.
+timeout /t 2 >NUL
+
+echo [%date% %time%] Copying new exe over old >> "%LOGFILE%"
+copy /y "{new_exe_path}" "{current_exe}" >> "%LOGFILE%" 2>&1
+if errorlevel 1 (
+    echo [%date% %time%] COPY FAILED - update did not apply. Old exe is untouched. >> "%LOGFILE%"
+    goto end
+)
+
+echo [%date% %time%] Copy succeeded, relaunching >> "%LOGFILE%"
 start "" "{current_exe}"
+echo [%date% %time%] Relaunch command issued >> "%LOGFILE%"
 del "{new_exe_path}" >NUL 2>NUL
+
+:end
 del "%~f0"
 """
     with open(bat_path, "w") as f:

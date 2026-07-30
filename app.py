@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import threading
+import time
 import webbrowser
 
 # Windows consoles often default to a non-UTF-8 codepage (e.g. cp1252),
@@ -275,6 +276,37 @@ def api_startup_disable():
     return jsonify(updater.startup_disable(BASE_DIR))
 
 
+ERROR_LOG_FILE = os.path.join(BASE_DIR, "kachisdesk_error.log")
+
+
+def _log_crash(exc):
+    import traceback
+    try:
+        with open(ERROR_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"\n--- {datetime.now().isoformat()} ---\n")
+            traceback.print_exception(type(exc), exc, exc.__traceback__, file=f)
+    except OSError:
+        pass
+
+
+def _run_server_with_bind_retry(no_browser, max_attempts=6, retry_delay=1.5):
+    """Wraps app.run() with retries for OSError (port still in TIME_WAIT
+    right after a self-update swap, for example). Without this, a
+    --windowed build with no console would just vanish with no trace on
+    the very first bind failure."""
+    for attempt in range(1, max_attempts + 1):
+        try:
+            if not no_browser and attempt == 1:
+                _open_browser_soon()
+            app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
+            return  # app.run() only returns on a clean shutdown
+        except OSError as e:
+            _log_crash(e)
+            if attempt == max_attempts:
+                raise
+            time.sleep(retry_delay)
+
+
 if __name__ == "__main__":
     no_browser = "--no-browser" in sys.argv
 
@@ -289,10 +321,11 @@ if __name__ == "__main__":
     _write_pid_file()
     updater_checker.start_background_loop()
     try:
-        if not no_browser:
-            _open_browser_soon()
         # use_reloader=False: prevents Flask spawning a second process,
         # which would make the PID file / stop script unreliable.
-        app.run(host=HOST, port=PORT, debug=False, use_reloader=False)
+        _run_server_with_bind_retry(no_browser)
+    except Exception as e:
+        _log_crash(e)
+        raise
     finally:
         _remove_pid_file()
