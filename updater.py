@@ -22,7 +22,7 @@ import time
 import urllib.error
 import urllib.request
 
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.3.0"
 RUN_KEY_NAME = "KachisDesk"
 
 # The repo this app checks for updates by default. Anyone who downloads
