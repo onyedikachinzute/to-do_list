@@ -204,7 +204,9 @@ def api_version():
 @app.route("/api/config", methods=["GET", "POST"])
 def api_config():
     if request.method == "GET":
-        return jsonify(updater.load_config(BASE_DIR))
+        cfg = updater.load_config(BASE_DIR)
+        cfg["effective_repo"] = updater.effective_repo(cfg)
+        return jsonify(cfg)
 
     data = request.get_json(silent=True) or {}
     cfg = updater.load_config(BASE_DIR)
@@ -216,6 +218,7 @@ def api_config():
         except (TypeError, ValueError):
             pass
     updater.save_config(BASE_DIR, cfg)
+    cfg["effective_repo"] = updater.effective_repo(cfg)
     return jsonify(cfg)
 
 

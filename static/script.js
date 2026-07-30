@@ -385,6 +385,9 @@ document.addEventListener("DOMContentLoaded", () => {
       localVersion = vData.version;
       versionLabel.textContent = `v${localVersion}`;
       githubRepoInput.value = cData.github_repo || "";
+      githubRepoInput.placeholder = cData.effective_repo
+        ? `Using: ${cData.effective_repo}`
+        : "e.g. kachi/kachis-desk-todo";
     } catch (err) {
       versionLabel.textContent = "v?";
     }

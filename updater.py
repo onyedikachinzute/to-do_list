@@ -22,8 +22,16 @@ import time
 import urllib.error
 import urllib.request
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.0.0"
 RUN_KEY_NAME = "KachisDesk"
+
+# The repo this app checks for updates by default. Anyone who downloads
+# the .exe gets update-checking working immediately, with zero setup -
+# this is baked into the build, not read from config.json, so it can't
+# be lost even if config.json gets deleted or reset.
+#
+# Set this to your own repo before building/publishing:
+DEFAULT_GITHUB_REPO = "onyedikachinzute/to-do_list"
 
 try:
     import winreg
@@ -41,6 +49,12 @@ IS_FROZEN = getattr(sys, "frozen", False)
 
 def _default_config():
     return {"github_repo": "", "check_interval_hours": 6, "skip_version": None}
+
+
+def effective_repo(cfg):
+    """The repo actually used for update checks: whatever the user typed
+    in Settings, or the baked-in default if they left it blank."""
+    return (cfg.get("github_repo") or "").strip() or DEFAULT_GITHUB_REPO
 
 
 def load_config(base_dir):
@@ -147,7 +161,7 @@ class UpdateChecker:
 
     def check_now(self):
         cfg = load_config(self.base_dir)
-        result = check_latest(cfg.get("github_repo", ""))
+        result = check_latest(effective_repo(cfg))
         with self._lock:
             self.state["checked_at"] = time.time()
             if result.get("ok"):

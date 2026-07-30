@@ -57,7 +57,7 @@ Click the ⚙ gear icon in the header — no `.bat` files or terminal needed, th
 
 **Launch on Windows startup** — a toggle switch. Flips a registry entry (`HKCU\...\Run`) directly, no shortcut files involved. Works identically whether you're running the script or the `.exe`.
 
-**Auto-updates** — set your GitHub repo (`username/repo`) in Settings once. From then on:
+**Auto-updates** — the app already knows which repo to check for updates (`DEFAULT_GITHUB_REPO` in `updater.py`), so anyone who downloads it gets working update checks with zero setup. The GitHub repo field in Settings is only needed if someone forks the project and wants their own copy pointed at their own repo instead. From then on:
 - On every launch, and every few hours after that, the app checks your repo's [latest release](https://docs.github.com/en/repositories/releasing-projects-on-github) for a newer version tag.
 - If one exists, a banner appears at the top of the page and details show up in Settings (including release notes).
 - Click **Update now** and it downloads the new build and restarts itself automatically — no manual download/reinstall.
